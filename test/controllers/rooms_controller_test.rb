@@ -42,4 +42,32 @@ class RoomsControllerTest < ActionDispatch::IntegrationTest
       delete room_url(rooms(:designers))
     end
   end
+
+  test "show displays welcome invite in original room for admin" do
+    accounts(:signal).update!(settings: { "restrict_invite_to_administrators" => "true" })
+
+    get room_url(Room.original)
+    assert_response :success
+    assert_match "system_welcome", response.body
+  end
+
+  test "show displays welcome invite in original room for member when unrestricted" do
+    sign_in :kevin
+    Room.original.memberships.find_or_create_by!(user: users(:kevin))
+
+    get room_url(Room.original)
+    assert_response :success
+    assert_match "system_welcome", response.body
+  end
+
+  test "show hides welcome invite in original room for member when restricted" do
+    accounts(:signal).update!(settings: { "restrict_invite_to_administrators" => "true" })
+
+    sign_in :kevin
+    Room.original.memberships.find_or_create_by!(user: users(:kevin))
+
+    get room_url(Room.original)
+    assert_response :success
+    assert_no_match "system_welcome", response.body
+  end
 end

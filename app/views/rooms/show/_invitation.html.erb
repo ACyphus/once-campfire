@@ -1,4 +1,5 @@
 <% if @room == Room.original && !@room.messages.paged? %>
+  <% if Current.user.can_administer? || !Current.account.settings.restrict_invite_to_administrators? %>
   <div id="system_welcome" class="message message--formatted txt-align-center center">
     <div class="message__body center">
       <div class="message__body-content position-relative">
@@ -16,4 +17,5 @@
       </div>
     </div>
   </div>
+  <% end %>
 <% end %>

@@ -1,3 +1,4 @@
+<% if Current.user.can_administer? || !Current.account.settings.restrict_invite_to_administrators? %>
 <div class="flex flex-column align-center gap">
   <% url = join_url(Current.account.join_code) %>
 
@@ -33,3 +34,4 @@
     <% end %>
   </div>
 </div>
+<% end %>

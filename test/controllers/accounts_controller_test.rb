@@ -58,4 +58,59 @@ class AccountsControllerTest < ActionDispatch::IntegrationTest
     put account_url, params: { account: { name: "Different" } }
     assert_response :forbidden
   end
+
+  test "edit shows invite link to admin" do
+    get edit_account_url
+    assert_response :ok
+    assert_match "invite_url", response.body
+  end
+
+  test "edit shows invite link to admin even when restricted" do
+    accounts(:signal).update!(settings: { "restrict_invite_to_administrators" => "true" })
+
+    get edit_account_url
+    assert_response :ok
+    assert_match "invite_url", response.body
+  end
+
+  test "edit shows invite link to member when unrestricted" do
+    sign_in :kevin
+    get edit_account_url
+    assert_response :ok
+    assert_match "invite_url", response.body
+  end
+
+  test "edit hides invite link from member when restricted" do
+    accounts(:signal).update!(settings: { "restrict_invite_to_administrators" => "true" })
+
+    sign_in :kevin
+    get edit_account_url
+    assert_response :ok
+    assert_no_match "invite_url", response.body
+  end
+
+  test "admin can toggle restrict_invite_to_administrators setting" do
+    assert_not accounts(:signal).settings.restrict_invite_to_administrators?
+
+    put account_url, params: { account: { settings: { restrict_invite_to_administrators: "true" } } }
+    assert_redirected_to edit_account_url
+    assert accounts(:signal).reload.settings.restrict_invite_to_administrators?
+
+    put account_url, params: { account: { settings: { restrict_invite_to_administrators: "false" } } }
+    assert_redirected_to edit_account_url
+    assert_not accounts(:signal).reload.settings.restrict_invite_to_administrators?
+  end
+
+  test "admin sees restrict invite toggle in settings" do
+    get edit_account_url
+    assert_response :ok
+    assert_match "Must be admin to share invite link", response.body
+  end
+
+  test "non-admin does not see restrict invite toggle" do
+    sign_in :kevin
+    get edit_account_url
+    assert_response :ok
+    assert_no_match "Must be admin to share invite link", response.body
+  end
 end
