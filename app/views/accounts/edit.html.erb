@@ -120,7 +120,9 @@
   <div class="margin-block pad-inline pad-block-start fill-shade border-radius">
     <%= render "accounts/invite" %>
 
-    <hr class="margin-block separator full-width" style="--border-style: solid">
+    <% if Current.user.can_administer? || !Current.account.settings.restrict_invite_to_administrators? %>
+      <hr class="margin-block separator full-width" style="--border-style: solid">
+    <% end %>
 
     <menu class="flex flex-column gap margin-none pad">
       <turbo-frame id="account_users">

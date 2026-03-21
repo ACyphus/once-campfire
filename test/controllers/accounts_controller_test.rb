@@ -78,15 +78,17 @@ class AccountsControllerTest < ActionDispatch::IntegrationTest
     get edit_account_url
     assert_response :ok
     assert_match "invite_url", response.body
+    assert_match "margin-block separator full-width", response.body
   end
 
-  test "edit hides invite link from member when restricted" do
+  test "edit hides invite link and divider from member when restricted" do
     accounts(:signal).update!(settings: { "restrict_invite_to_administrators" => "true" })
 
     sign_in :kevin
     get edit_account_url
     assert_response :ok
     assert_no_match "invite_url", response.body
+    assert_no_match "margin-block separator full-width", response.body
   end
 
   test "admin can toggle restrict_invite_to_administrators setting" do
