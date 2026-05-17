@@ -28,13 +28,25 @@ class SessionsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "new renders help contact override email when set" do
+    accounts(:signal).update!(settings: {
+      "help_contact_name" => "Support Team", "help_contact_email" => "support@example.com" })
+
+    get new_session_url
+
+    assert_response :ok
+    assert_match "mailto:support@example.com", response.body
+    assert_match ERB::Util.url_encode("Help with #{accounts(:signal).name} access"), response.body
+    assert_match "Email Support Team for assistance.", response.body
+  end
+
+  test "new falls back to email in display text when name is missing" do
+    User.administrator.destroy_all
     accounts(:signal).update!(settings: { "help_contact_email" => "support@example.com" })
 
     get new_session_url
 
     assert_response :ok
-    assert_match "support@example.com", response.body
-    assert_match "mailto:support@example.com", response.body
+    assert_match "Email support@example.com for assistance.", response.body
   end
 
   test "new hides help contact button when no admin exists and no override is set" do
