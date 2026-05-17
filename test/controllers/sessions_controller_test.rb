@@ -27,6 +27,26 @@ class SessionsControllerTest < ActionDispatch::IntegrationTest
     assert_select "h1", text: /Upgrade to a supported web browser/, count: 0
   end
 
+  test "new renders help contact override email when set" do
+    accounts(:signal).update!(settings: { "help_contact_email" => "support@example.com" })
+
+    get new_session_url
+
+    assert_response :ok
+    assert_match "support@example.com", response.body
+    assert_match "mailto:support@example.com", response.body
+  end
+
+  test "new hides help contact button when no admin exists and no override is set" do
+    # Leave one non-admin user so we don't trigger the first-run redirect
+    User.administrator.destroy_all
+
+    get new_session_url
+
+    assert_response :ok
+    assert_no_match "lifebuoy.svg", response.body
+  end
+
   test "create with valid credentials" do
     assert_difference -> { Session.count }, +1 do
       post session_url, params: { email_address: "david@37signals.com", password: "secret123456" }
