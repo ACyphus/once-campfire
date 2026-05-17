@@ -35,7 +35,7 @@ class SessionsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :ok
     assert_match "mailto:support@example.com", response.body
-    assert_match CGI.escape("Help with #{accounts(:signal).name} access"), response.body
+    assert_match ERB::Util.url_encode("Help with #{accounts(:signal).name} access"), response.body
     assert_match "Email Support Team for assistance.", response.body
   end
 
