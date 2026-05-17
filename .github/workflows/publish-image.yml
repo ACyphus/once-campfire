@@ -55,7 +55,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Compute canonical image name (lowercase)
+      - name: Compute canonical image name (lowercase) and app version
         id: vars
         shell: bash
         run: |
@@ -63,6 +63,13 @@ jobs:
           IMAGE_REF="${IMAGE_NAME:-$GITHUB_REPOSITORY}"
           CANONICAL_IMAGE="${REGISTRY}/${IMAGE_REF,,}"
           echo "canonical=${CANONICAL_IMAGE}" >> "$GITHUB_OUTPUT"
+
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            APP_VERSION="${GITHUB_REF#refs/tags/v}"
+          else
+            APP_VERSION="${GITHUB_REF_NAME}-${GITHUB_SHA:0:7}"
+          fi
+          echo "app_version=${APP_VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Extract Docker metadata (tags, labels) with arch suffix
         id: meta
@@ -91,6 +98,8 @@ jobs:
           build-args: |
             OCI_SOURCE=${{ env.SOURCE_URL }}
             OCI_DESCRIPTION=${{ env.IMAGE_DESCRIPTION }}
+            APP_VERSION=${{ steps.vars.outputs.app_version }}
+            GIT_REVISION=${{ github.sha }}
           platforms: ${{ matrix.platform }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
