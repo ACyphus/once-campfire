@@ -115,4 +115,54 @@ class AccountsControllerTest < ActionDispatch::IntegrationTest
     assert_response :ok
     assert_no_match "Must be admin to share invite link", response.body
   end
+
+  test "admin can set help_contact_name and help_contact_email" do
+    put account_url, params: { account: { settings: {
+      help_contact_name: "Support Team", help_contact_email: "support@example.com" } } }
+
+    assert_redirected_to edit_account_url
+    assert_equal "Support Team",        accounts(:signal).reload.settings.help_contact_name
+    assert_equal "support@example.com", accounts(:signal).reload.settings.help_contact_email
+  end
+
+  test "admin can clear help_contact fields to revert to admin default" do
+    accounts(:signal).update!(settings: {
+      "help_contact_name" => "Support Team", "help_contact_email" => "support@example.com" })
+
+    put account_url, params: { account: { settings: {
+      help_contact_name: "", help_contact_email: "" } } }
+
+    assert_redirected_to edit_account_url
+    contact = accounts(:signal).reload.help_contact
+    assert_equal users(:david).name,          contact.name
+    assert_equal users(:david).email_address, contact.email_address
+  end
+
+  test "updating help_contact does not clear unrelated settings" do
+    accounts(:signal).update!(settings: { "restrict_invite_to_administrators" => "true" })
+
+    put account_url, params: { account: { settings: {
+      help_contact_email: "support@example.com" } } }
+
+    assert_redirected_to edit_account_url
+    assert accounts(:signal).reload.settings.restrict_invite_to_administrators?
+    assert_equal "support@example.com", accounts(:signal).settings.help_contact_email
+  end
+
+  test "sign-in page renders help contact override email when set" do
+    accounts(:signal).update!(settings: { "help_contact_email" => "support@example.com" })
+
+    get new_session_url
+    assert_response :ok
+    assert_match "support@example.com", response.body
+    assert_match "mailto:support@example.com", response.body
+  end
+
+  test "sign-in page hides help contact button when no admin exists and no override is set" do
+    User.administrator.destroy_all
+
+    get new_session_url
+    assert_response :ok
+    assert_no_match "lifebuoy.svg", response.body
+  end
 end
