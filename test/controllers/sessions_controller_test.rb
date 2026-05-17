@@ -35,6 +35,7 @@ class SessionsControllerTest < ActionDispatch::IntegrationTest
     assert_response :ok
     assert_match "support@example.com", response.body
     assert_match "mailto:support@example.com", response.body
+    assert_match CGI.escape("Help with #{accounts(:signal).name} access"), response.body
   end
 
   test "new hides help contact button when no admin exists and no override is set" do
