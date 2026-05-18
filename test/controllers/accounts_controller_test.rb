@@ -165,4 +165,38 @@ class AccountsControllerTest < ActionDispatch::IntegrationTest
     assert_response :ok
     assert_no_match "lifebuoy.svg", response.body
   end
+
+  test "admin can set code_of_conduct_url and minimum_age" do
+    put account_url, params: { account: { settings: {
+      code_of_conduct_url: "https://example.com/coc", minimum_age: "18" } } }
+
+    assert_redirected_to edit_account_url
+    accounts(:signal).reload
+    assert_equal "https://example.com/coc", accounts(:signal).settings.code_of_conduct_url
+    assert_equal 18, accounts(:signal).settings.minimum_age
+  end
+
+  test "admin update is rejected when code_of_conduct_url has a non-http scheme" do
+    put account_url, params: { account: { settings: {
+      code_of_conduct_url: "javascript:alert(1)" } } }
+
+    assert_redirected_to edit_account_url
+    assert_match(/Code of conduct URL/, flash[:alert])
+    assert_nil accounts(:signal).reload.settings.code_of_conduct_url
+  end
+
+  test "admin sees sign-up requirements fields in settings" do
+    get edit_account_url
+    assert_response :ok
+    assert_match "Sign-up requirements", response.body
+    assert_select "input[name='account[settings][code_of_conduct_url]'][type='url']"
+    assert_select "input[name='account[settings][minimum_age]'][type='number']"
+  end
+
+  test "non-admin does not see sign-up requirements fields" do
+    sign_in :kevin
+    get edit_account_url
+    assert_response :ok
+    assert_no_match "Sign-up requirements", response.body
+  end
 end

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2025_12_12_154340) do
+ActiveRecord::Schema[8.2].define(version: 2026_05_18_212447) do
   create_table "accounts", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.text "custom_styles"
@@ -147,8 +147,10 @@ ActiveRecord::Schema[8.2].define(version: 2025_12_12_154340) do
   create_table "users", force: :cascade do |t|
     t.text "bio"
     t.string "bot_token"
+    t.datetime "code_of_conduct_agreed_at"
     t.datetime "created_at", null: false
     t.string "email_address"
+    t.datetime "minimum_age_attested_at"
     t.string "name", null: false
     t.string "password_digest"
     t.integer "role", default: 0, null: false

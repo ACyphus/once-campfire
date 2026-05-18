@@ -9,8 +9,11 @@ class AccountsController < ApplicationController
   end
 
   def update
-    @account.update!(account_params)
-    redirect_to edit_account_url, notice: "✓"
+    if @account.update(account_params)
+      redirect_to edit_account_url, notice: "✓"
+    else
+      redirect_to edit_account_url, alert: @account.errors.full_messages.to_sentence
+    end
   end
 
   private

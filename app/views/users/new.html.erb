@@ -63,6 +63,31 @@
         </label>
       </div>
 
+      <% coc_url = Current.account.settings.code_of_conduct_url.to_s.strip.presence %>
+      <% min_age = Current.account.settings.minimum_age.to_i %>
+
+      <% if coc_url || min_age > 0 %>
+        <fieldset class="flex flex-column gap">
+          <% if coc_url %>
+            <label class="flex align-center gap txt-align-start">
+              <%= form.check_box :agreed_to_code_of_conduct, required: true %>
+              <span>
+                I agree to abide by the
+                <%= link_to "code of conduct", coc_url, target: "_blank", rel: "noopener noreferrer" %>
+                of <%= Current.account.name %>
+              </span>
+            </label>
+          <% end %>
+
+          <% if min_age > 0 %>
+            <label class="flex align-center gap txt-align-start">
+              <%= form.check_box :attested_minimum_age, required: true %>
+              <span>I am <%= min_age %> years old or older</span>
+            </label>
+          <% end %>
+        </fieldset>
+      <% end %>
+
       <%= form.button class: "btn btn--reversed center txt-large", type: "submit" do %>
         <%= image_tag "check.svg", aria: { hidden: "true" } %>
         <span class="for-screen-reader">Save</span>
