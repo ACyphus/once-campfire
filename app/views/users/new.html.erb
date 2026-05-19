@@ -66,18 +66,18 @@
       <% coc_url = Current.account.settings.code_of_conduct_url.to_s.strip.presence %>
       <% min_age = Current.account.settings.minimum_age.to_i %>
 
-      <%= form.button class: "btn btn--reversed center txt-large", type: "submit" do %>
-        <%= image_tag "check.svg", aria: { hidden: "true" } %>
-        <span class="for-screen-reader">Save</span>
-      <% end %>
-
       <% if coc_url || min_age > 0 %>
-        <p class="txt-small txt-subtle txt-align-center pad-block-start">
+        <p class="txt-large txt-align-center txt-tight-lines">
           By signing up, you agree to<% if coc_url %>
             the <%= link_to "code of conduct", coc_url, target: "_blank", rel: "noopener noreferrer" %>
             of <%= Current.account.name %><% end %><% if coc_url && min_age > 0 %> and<% end %><% if min_age > 0 %>
             confirm you are <%= min_age %> years old or older<% end %>.
         </p>
+      <% end %>
+
+      <%= form.button class: "btn btn--reversed center txt-large", type: "submit" do %>
+        <%= image_tag "check.svg", aria: { hidden: "true" } %>
+        <span class="for-screen-reader">Save</span>
       <% end %>
     </div>
   </section>
