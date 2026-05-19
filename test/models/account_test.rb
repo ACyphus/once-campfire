@@ -88,4 +88,43 @@ class AccountTest < ActiveSupport::TestCase
     assert_nil contact.name
     assert_nil contact.email_address
   end
+
+  test "code_of_conduct_url and minimum_age default to nil" do
+    assert_nil accounts(:signal).settings.code_of_conduct_url
+    assert_nil accounts(:signal).settings.minimum_age
+  end
+
+  test "code_of_conduct_url and minimum_age round-trip" do
+    accounts(:signal).update!(settings: {
+      "code_of_conduct_url" => "https://example.com/coc",
+      "minimum_age" => "21" })
+
+    accounts(:signal).reload
+    assert_equal "https://example.com/coc", accounts(:signal).settings.code_of_conduct_url
+    assert_equal 21, accounts(:signal).settings.minimum_age
+  end
+
+  test "code_of_conduct_url rejects javascript: and other non-http(s) schemes" do
+    [ "javascript:alert(1)", "data:text/html,<script>", "file:///etc/passwd", "ftp://example.com/" ].each do |bad|
+      account = accounts(:signal)
+      account.settings.code_of_conduct_url = bad
+
+      assert_not account.valid?, "#{bad.inspect} should be rejected"
+      assert_match(/Code of conduct URL/, account.errors.full_messages.to_sentence)
+    end
+  end
+
+  test "code_of_conduct_url accepts http and https" do
+    [ "http://example.com/coc", "https://example.com/coc" ].each do |good|
+      account = accounts(:signal)
+      account.settings.code_of_conduct_url = good
+      assert account.valid?, "#{good.inspect} should be accepted (errors: #{account.errors.full_messages})"
+    end
+  end
+
+  test "code_of_conduct_url with whitespace-only value is treated as blank and valid" do
+    account = accounts(:signal)
+    account.settings.code_of_conduct_url = "   "
+    assert account.valid?
+  end
 end

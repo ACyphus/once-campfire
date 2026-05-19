@@ -19,6 +19,11 @@ class User < ApplicationRecord
 
   has_secure_password validations: false
 
+  attr_accessor :agreed_to_code_of_conduct, :attested_minimum_age
+
+  validate :code_of_conduct_must_be_accepted, on: :signup
+  validate :minimum_age_must_be_attested,     on: :signup
+
   after_create_commit :grant_membership_to_open_rooms
 
   scope :ordered, -> { order("LOWER(name)") }
@@ -60,5 +65,23 @@ class User < ApplicationRecord
 
     def close_remote_connections(reconnect: false)
       ActionCable.server.remote_connections.where(current_user: self).disconnect reconnect: reconnect
+    end
+
+    def code_of_conduct_must_be_accepted
+      account = Current.account or return
+      return if account.settings.code_of_conduct_url.to_s.strip.blank?
+
+      unless ActiveModel::Type::Boolean.new.cast(agreed_to_code_of_conduct)
+        errors.add(:base, "You must agree to the code of conduct to sign up")
+      end
+    end
+
+    def minimum_age_must_be_attested
+      account = Current.account or return
+      return unless account.settings.minimum_age.to_i > 0
+
+      unless ActiveModel::Type::Boolean.new.cast(attested_minimum_age)
+        errors.add(:base, "You must confirm you meet the minimum age to sign up")
+      end
     end
 end
