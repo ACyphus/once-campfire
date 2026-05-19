@@ -16,13 +16,9 @@ class UsersController < ApplicationController
     @user.code_of_conduct_agreed_at = now if settings.code_of_conduct_url.to_s.strip.present?
     @user.minimum_age_attested_at   = now if settings.minimum_age.to_i > 0
 
-    if @user.save(context: :signup)
-      start_new_session_for @user
-      redirect_to root_url
-    else
-      flash.now[:alert] = @user.errors.full_messages.to_sentence
-      render :new, status: :unprocessable_entity
-    end
+    @user.save!
+    start_new_session_for @user
+    redirect_to root_url
   rescue ActiveRecord::RecordNotUnique
     redirect_to new_session_url(email_address: user_params[:email_address])
   end
@@ -40,7 +36,6 @@ class UsersController < ApplicationController
     end
 
     def user_params
-      params.require(:user).permit(:name, :avatar, :email_address, :password,
-                                   :agreed_to_code_of_conduct, :attested_minimum_age)
+      params.require(:user).permit(:name, :avatar, :email_address, :password)
     end
 end
