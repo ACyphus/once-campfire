@@ -1,4 +1,12 @@
 module MessagesHelper
+  # Rendered text is re-sanitized before linking. Rails' default safe list
+  # lacks the formatting the rich text editor produces
+  AUTO_LINK_ALLOWED_TAGS = Rails::HTML5::SafeListSanitizer.allowed_tags + ContentFilters::EDITOR_FORMATTING_TAGS
+  AUTO_LINK_ALLOWED_ATTRIBUTES = Rails::HTML5::SafeListSanitizer.allowed_attributes + ContentFilters::EDITOR_FORMATTING_ATTRIBUTES
+
+  # Text auto_link could turn into a link: a URL has a scheme or www., an email address an @
+  LINKABLE_TEXT = /:|@|www\./i
+
   def message_area_tag(room, &)
     tag.div id: "message-area", class: "message-area", contents: true, data: {
       controller: "messages presence drop-target",
@@ -31,6 +39,7 @@ module MessagesHelper
         controller: "reply",
         user_id: message.creator_id,
         message_id: message.id,
+        client_message_id: message.client_message_id,
         message_timestamp: message_timestamp_milliseconds,
         message_updated_at: message.updated_at.to_fs(:epoch),
         sort_value: message_timestamp_milliseconds,
@@ -57,7 +66,7 @@ module MessagesHelper
     when "sound"
       message_sound_presentation(message)
     else
-      auto_link h(ContentFilters::TextMessagePresentationFilters.apply(message.body.body)), html: { target: "_blank" }
+      auto_link_text h(ContentFilters::TextMessagePresentationFilters.apply(message.body.body))
     end
   rescue Exception => e
     Sentry.capture_exception(e, extra: { message: message })
@@ -67,6 +76,24 @@ module MessagesHelper
   end
 
   private
+    # auto_link finds URLs and email addresses with regular expressions, which
+    # can't tell an attribute value from text. Hand it one text node at a time,
+    # escaped as the serializer writes text, so a link can only land between tags.
+    def auto_link_text(html)
+      fragment = Nokogiri::HTML5.fragment(sanitize(html, tags: AUTO_LINK_ALLOWED_TAGS, attributes: AUTO_LINK_ALLOWED_ATTRIBUTES))
+
+      fragment.xpath(".//text()[not(ancestor::a)]").each do |node|
+        if node.text.match?(LINKABLE_TEXT)
+          text = node.to_html
+          linked = auto_link(text, html: { target: "_blank" })
+          node.replace Nokogiri::HTML5.fragment(linked) unless linked == text
+        end
+      end
+
+      # A <pre> starting with a newline needs an extra one written out to survive the next parse
+      fragment.to_html(preserve_newline: true).html_safe
+    end
+
     def messages_actions
       "turbo:before-stream-render@document->messages#beforeStreamRender keydown.up@document->messages#editMyLastMessage"
     end
