@@ -1,0 +1,32 @@
+name: Remove unintended public staging package
+
+on:
+  push:
+    branches:
+      - acyphus-campfire-v1-5-12-upgrade
+    paths:
+      - .github/workflows/staging-candidate-cleanup.yml
+
+permissions: {}
+
+jobs:
+  cleanup:
+    if: github.repository == 'ACyphus/once-campfire' && github.run_attempt == 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      packages: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Verify and remove only the package created by the staging run
+        run: |
+          set -euo pipefail
+          endpoint=/users/ACyphus/packages/container/once-campfire-staging
+          gh api "$endpoint" | jq -e '.id == 17077594 and .name == "once-campfire-staging" and .visibility == "public"' >/dev/null
+          gh api --paginate --slurp "$endpoint/versions" |
+            jq -e '
+              (add | sort_by(.id) | map([.id, .metadata.container.tags])) ==
+                [[1599246427, []], [1599246533, []], [1599246633, ["candidate-35d13c6-44586931615"]]]
+            ' >/dev/null
+          gh api --method DELETE "$endpoint"
