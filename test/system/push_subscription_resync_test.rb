@@ -9,8 +9,8 @@ class PushSubscriptionResyncTest < ApplicationSystemTestCase
   end
 
   teardown do
-    page.driver.browser.execute_cdp "Page.removeScriptToEvaluateOnNewDocument", identifier: @fake_subscription_script
-    page.execute_script("localStorage.clear()") if page.current_url.start_with?("http")
+    # Also discard the preload if setup fails before Capybara visits a page.
+    page.driver.quit
   end
 
   test "a browser posts its subscription again once per session, so it survives a password change" do
@@ -40,10 +40,9 @@ class PushSubscriptionResyncTest < ApplicationSystemTestCase
   end
 
   private
-    # Headless Chrome has no push service, so stand in for the subscription the service worker would hold. The
-    # browser is shared with other system tests, so teardown removes this again.
+    # Headless Chrome has no push service, so stand in for the subscription the service worker would hold.
     def fake_a_browser_push_subscription
-      @fake_subscription_script = page.driver.browser.execute_cdp("Page.addScriptToEvaluateOnNewDocument", source: <<~JS)["identifier"]
+      page.driver.browser.execute_cdp("Page.addScriptToEvaluateOnNewDocument", source: <<~JS)
         (() => {
           Object.defineProperty(Notification, "permission", { get: () => "granted" })
           const subscription = {
