@@ -12,7 +12,7 @@ class RoomsController < ApplicationController
   end
 
   def destroy
-    @room.destroy
+    @room.destroy_later
 
     broadcast_remove_room
     redirect_to root_url
@@ -20,11 +20,17 @@ class RoomsController < ApplicationController
 
   private
     def set_room
-      if room = Current.user.rooms.find_by(id: params[:room_id] || params[:id])
+      if room = room_scope.find_by(id: params[:room_id] || params[:id])
         @room = room
       else
         redirect_to root_url, alert: "Room not found or inaccessible"
       end
+    end
+
+    # Subclasses narrow this to the room types they're allowed to act on, so that one
+    # room namespace can't be used to reach another's rooms.
+    def room_scope
+      Current.user.rooms
     end
 
     def ensure_can_administer
@@ -38,9 +44,9 @@ class RoomsController < ApplicationController
     end
 
     def find_messages
-      messages = @room.messages.with_creator.with_attachment_details.with_boosts
+      messages = @room.messages.with_presentation
 
-      if show_first_message = messages.find_by(id: params[:message_id])
+      if params[:message_id].present? && (show_first_message = messages.find_by(id: params[:message_id]))
         @messages = messages.page_around(show_first_message)
       else
         @messages = messages.last_page

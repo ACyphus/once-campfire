@@ -2,7 +2,6 @@ ENV["RAILS_ENV"] ||= "test"
 require_relative "../config/environment"
 
 require "rails/test_help"
-require "minitest/unit"
 require "mocha/minitest"
 require "webmock/minitest"
 require "turbo/broadcastable/test_helper"
@@ -17,7 +16,7 @@ class ActiveSupport::TestCase
   # Setup all fixtures in test/fixtures/*.yml for all tests in alphabetical order.
   fixtures :all
 
-  include SessionTestHelper, MentionTestHelper, TurboTestHelper
+  include SessionTestHelper, MentionTestHelper, TurboTestHelper, DnsTestHelper
 
   setup do
     ActionCable.server.pubsub.clear

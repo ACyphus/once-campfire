@@ -3,7 +3,11 @@ class Account < ApplicationRecord
 
   HelpContact = Data.define(:name, :email_address)
 
-  has_one_attached :logo
+  has_one_attached :logo do |attachable|
+    attachable.variant :large, resize_to_limit: [ 512, 512 ], format: :png
+    attachable.variant :small, resize_to_limit: [ 192, 192 ], format: :png
+  end
+
   has_json :settings,
     restrict_room_creation_to_administrators: false,
     restrict_invite_to_administrators: false,
@@ -13,6 +17,10 @@ class Account < ApplicationRecord
     minimum_age:          :integer
 
   validate :code_of_conduct_url_must_be_http_or_https
+
+  def logo_variant(size)
+    logo.variant(size).processed if logo.variable?
+  end
 
   def help_contact
     fallback = User.administrator.first

@@ -37,7 +37,11 @@ class MessagesController < ApplicationController
     @message.update!(message_params)
 
     @message.broadcast_replace_to @room, :messages, target: [ @message, :presentation ], partial: "messages/presentation", attributes: { maintain_scroll: true }
-    redirect_to room_message_url(@room, @message)
+
+    respond_to do |format|
+      format.html { redirect_to room_message_url(@room, @message) }
+      format.json { render :show }
+    end
   end
 
   def destroy
@@ -58,11 +62,11 @@ class MessagesController < ApplicationController
     def find_paged_messages
       case
       when params[:before].present?
-        @room.messages.with_creator.page_before(@room.messages.find(params[:before]))
+        @room.messages.with_presentation.page_before(@room.messages.find(params[:before]))
       when params[:after].present?
-        @room.messages.with_creator.page_after(@room.messages.find(params[:after]))
+        @room.messages.with_presentation.page_after(@room.messages.find(params[:after]))
       else
-        @room.messages.with_creator.last_page
+        @room.messages.with_presentation.last_page
       end
     end
 

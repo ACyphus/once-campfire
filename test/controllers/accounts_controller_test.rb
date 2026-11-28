@@ -10,6 +10,16 @@ class AccountsControllerTest < ActionDispatch::IntegrationTest
     assert_response :ok
   end
 
+  test "edit shows whether room creation is restricted to administrators" do
+    get edit_account_url
+    assert_select "label.switch input.switch__input[type=checkbox]:not([checked])"
+
+    accounts(:signal).update!(settings: { restrict_room_creation_to_administrators: true })
+
+    get edit_account_url
+    assert_select "label.switch input.switch__input[type=checkbox][checked][data-action='change->form#submit']"
+  end
+
   test "edit groups administrators separately from members with a divider" do
     get edit_account_url
 
@@ -40,6 +50,19 @@ class AccountsControllerTest < ActionDispatch::IntegrationTest
       assert name_position, "Member #{name} should appear in the response"
       assert name_position > divider_position, "Member #{name} should appear after the divider"
     end
+  end
+
+  test "edit lists a page of members and the next page carries on from it" do
+    User.insert_all 501.times.map { |i| { name: "Member #{i}", email_address: "member#{i}@37signals.com" } }
+    users(:kevin).banned!
+
+    get edit_account_url
+    first_page = listed_user_ids
+    get account_users_url(page: 2, format: :turbo_stream)
+    next_page = listed_user_ids
+
+    assert_not_empty next_page
+    assert_equal User.where(status: [ :active, :banned ]).without_bots.ids.sort, (first_page + next_page).sort
   end
 
   test "update" do
@@ -199,4 +222,9 @@ class AccountsControllerTest < ActionDispatch::IntegrationTest
     assert_response :ok
     assert_no_match "Sign-up requirements", response.body
   end
+
+  private
+    def listed_user_ids
+      response.body.scan(%r{href="/users/(\d+)"}).flatten.map(&:to_i)
+    end
 end
